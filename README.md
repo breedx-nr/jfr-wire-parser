@@ -24,12 +24,17 @@ very unforunately anitpattern.
 # chunk
 
 Here is a link to the [chunk writer source](https://github.com/openjdk/jdk11/blob/37115c8ea4aff13a8148ee2b8832b20888a5d880/src/hotspot/share/jfr/recorder/repository/jfrChunkWriter.cpp).
+[This decoder ring](https://github.com/openjdk/jdk11/blob/37115c8ea4aff13a8148ee2b8832b20888a5d880/src/hotspot/cpu/zero/bytes_zero.hpp#L31)
+gives some hints about the various sizes of `u2`, `u4`, `u8`.  `u2` is an "unsigned short", or 16 bits (2 bytes).
+Therefore `u4` is 32 bits (4 bytes), `u8` is 64 bits (8 bytes). 
 
 Whenever a chunk is opened, this is automatically written:
 
-| field | length | example | notes |
-|-------|--------|---------|------|
-| magic | 4      | FLR\0   | 4-byte nagic string
-| major | 2      | 0002    | major version
-| minor | 2      | 0000    | minor version 
+| field | offset | length | example | notes               |
+|-------|--------|------ -|---------|---------------------|
+| magic | 0      | 4      | FLR\0   | 4-byte nagic string |
+| major | 4      | 2      | 0002    | major version       |
+| minor | 6      | 2      | 0000    | minor version       |
+|  x    | x      | x      | x       | x                   |
+
 
