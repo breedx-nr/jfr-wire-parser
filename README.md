@@ -31,7 +31,7 @@ Therefore `u4` is 32 bits (4 bytes), `u8` is 64 bits (8 bytes).
 Whenever a chunk is opened, this is automatically written:
 
 | field | offset | length | example | notes               |
-|-------|--------|------ -|---------|---------------------|
+|-------|--------|--------|---------|---------------------|
 | magic | 0      | 4      | FLR\0   | 4-byte nagic string |
 | major | 4      | 2      | 0002    | major version       |
 | minor | 6      | 2      | 0000    | minor version       |
