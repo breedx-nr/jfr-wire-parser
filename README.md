@@ -57,6 +57,7 @@ below chunk decoding.
 
 # chunk
 
+The "chunk" is the basic high-level block of JFR data.  JFR data is always contained in chunks.
 Here is a link to the [chunk writer source](https://github.com/openjdk/jdk11/blob/37115c8ea4aff13a8148ee2b8832b20888a5d880/src/hotspot/share/jfr/recorder/repository/jfrChunkWriter.cpp).
 [This decoder ring](https://github.com/openjdk/jdk11/blob/37115c8ea4aff13a8148ee2b8832b20888a5d880/src/hotspot/cpu/zero/bytes_zero.hpp#L31)
 gives some hints about the various sizes of `u2`, `u4`, `u8`.  `u2` is an "unsigned short", or 16 bits (2 bytes).
