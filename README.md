@@ -20,6 +20,9 @@ Initial impressions:
 * A bunch of what would normally be simple parsing is hidden by work being done in constructors, a
 very unforunately anitpattern.
 * A notable lack of file format definition?  Well, I haven't found one yet.
+* Almost everything in the jfr subsystem is concealed, internal, locked down, or otherwise 
+made to be completely unusable by anyone doing anything other than the singular
+expected use case.
 
 # sample data
 Here is a slice of the top of a JFR file.  It is used as a reference in the 
@@ -71,7 +74,7 @@ when the chunk is finished, the "chunk header" starting at offset 8 is written.
 | minor                | 6      | 2      | 0000    | minor version       |
 | chunk size           | 8      | 8      | 0000 0000 0010 b182 | the total size of the chunk, in this example 1094018 bytes decimal | 
 | checkpoint offset    | 16     | 8      | 0000 0000 000f 0147 | obtained from _chunkstate->previous_checkpoint_offset(), so maybe "initial" means previous?   | 
-| metadata event offset| 24     | 8      | 0000 0000 000f 8dab | metadata is the last thing written in the chunk, this is the offset to it |
+| metadata offset      | 24     | 8       | 0000 0000 000f 8dab | metadata is the last thing written in the chunk, this is the offset to it |
 | chunk start nanos    | 32     | 8      | 162a 092e cfe0 6f00 | that's a big number eh |
 | chunk duration nanos | 40     | 8      | 0000 0002 550f 4b00 | this chunk took 10.017 seconds |
 | chunk start ticks    | 48     | 8      | 0000 0128 9024 2ec3 | another big number   |
@@ -79,6 +82,17 @@ when the chunk is finished, the "chunk header" starting at offset 8 is written.
 | compressed ints      | 64     | 4      | 0000 0001 | ints are compressed, [hard coded to always 1](https://github.com/openjdk/jdk11/blob/37115c8ea4aff13a8148ee2b8832b20888a5d880/src/hotspot/share/jfr/recorder/service/jfrOptionSet.cpp#L151)   
 
 # then...
+
+Events.
+
+| field                | offset | length | example   | notes               |
+|----------------------|--------|--------|-----------|----------------------
+| size                 | 68     | 4      | 9f9b 8000 | might be a strange 7-bit packing sequence.  See RecordingInput.readLong().  |    
+| typeId               | 72     | 8      | 01f3 83ed a3e4 0100 | 7-bit packed long. if typeId == 1, then it's the constant pool.  Otherwise, the type id is used to determine which parser to use.|
+    
+
+| size 68 4 9f9b 8000 | 
+
 
 There's a section in `JfrRecorderService.cpp` in the `write` method that
 has 
@@ -103,3 +117,62 @@ so let's look at `write_types()` first:
 `JfrCheckpointManager::write_types()` which calls `JfrTypeManager::write_types(writer)`.
 This implementation iterates over a list of `JfrSerializerRegistration`, which I suppose
 is one per type that has been registered.
+
+`JfrSerializerRegistration::invoke` writes the [... tbd]
+
+
+# metadata
+
+The offset to the metadata is stored in the chunk header, and the metadata exists at 
+the bottom of a chunk.  The chunk can be found at `chunkStart + metadataOffset` (denoted `s` below).
+Metadata MUST be read before any events, because it contains bits required for parsing
+events.  Note that `v` for length below means "variable" because numeric types are in a
+special 7-bit packed format, and therefore computing offsets is impossible.  Once you start
+reading metadata, don't lose your place, or you will have to re-read everything.
+
+It's all stateful!
+
+| field                | offset | length | example    | notes               |
+|----------------------|--------|--------|------------|---------------------|
+| size                 | s      | v      | d7 c784 00 | Size of the metadata block. Who doesn't like a 3-byte data type?  ;) |
+| type id              | ? n/a  | 1      |            | Must be zero, so the size must be 1 byte |
+| start time           | ? n/a  | v      | b5e6 93a7 e401 | this case had 6 bytes, which translted to the decimal value 61285397301. Parser ignores this. |
+| duration             | ? n/a  | v (1?) | 00         | this was just zero in this example?  it is ignored by the parser |
+| metadata id          | ? n/a  | v (1?) | 00         | just zero in this example. just logged and ignored |
+| const pool size      | ? n/a  | v      | b00c       | in this example, the pool is 1584 bytes long 
+| cp 1                 | ? n/a  | v      | ?          | an encoded string.  there are `const pool size` consecutive entries of this same type. |
+| cp 2                 | ? n/a  | v      | ?          | an encoded string.  there are `const pool size` consecutive entries of this same type. |
+| ...                  |        |        |            | an encoded string.  there are `const pool size` consecutive entries of this same type. |
+| cp n                 | ? n/a  | v      | ?          | an encoded string.  there are `const pool size` consecutive entries of this same type. |
+
+## How to read a string:     
+
+When it comes time to read a string, read the first byte.
+
+| field                | offset | length | example    | notes               |
+|----------------------|--------|--------|------------|---------------------|
+| encoding             | 0      | 1      | 04         | if 0, null string all done. if 1, empty string, all done. 3 = UTF8 byte array, 4 = char array, 5 = ISO-8859-1 byte array.  NOTE that the javadoc is wrong in `RecordingInput.java`. |
+| size                 | 1      | v      | 10         | the size of the following array.  you might think that chars are 16 bits or that the encoding would matter, but nope, it's more complicated.  If char encoding, read chars as a variable width long (described above/elsewhere) and just cast down to `char`.  Otherwise, just read the byte array and pass it to `String()` with encoding. |
+| <content bytes>      | ? n/a  | v      |            | this is the actual content of the constant pool string |
+
+
+
+
+At that offset, we have:
+
+input.readInt(); // size
+long id = input.readLong(); // event type id
+if (id != METADATA_TYPE_ID) {   // hardcoded to zero, yup
+    throw new IOException("Expected metadata event. Type id=" + id + ", should have been " + METADATA_TYPE_ID);
+}
+input.readLong(); // start time
+input.readLong(); // duration
+long metadataId = input.readLong();
+
+// MetadataReader.java
+size = input.readInt()
+
+
+# strings
+
+Look in RecordingInput.java `readUTF()` for how to read/decode a string.
