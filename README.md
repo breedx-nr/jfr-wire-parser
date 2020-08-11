@@ -78,3 +78,28 @@ when the chunk is finished, the "chunk header" starting at offset 8 is written.
 | clock frequency      | 56     | 8      | 0000 0000 a0ee bb00 | this calls `os::elapsed_frequency()` which is platform dependent.  It's a billion on linux/bsd, 1 million on aix, etc. NOT CPU frequency. |  
 | compressed ints      | 64     | 4      | 0000 0001 | ints are compressed, [hard coded to always 1](https://github.com/openjdk/jdk11/blob/37115c8ea4aff13a8148ee2b8832b20888a5d880/src/hotspot/share/jfr/recorder/service/jfrOptionSet.cpp#L151)   
 
+# then...
+
+There's a section in `JfrRecorderService.cpp` in the `write` method that
+has 
+```
+  pre_safepoint_write();
+  invoke_safepoint_write();
+  post_safepoint_write();
+``` 
+and `-re_safepoint_write()` has:
+
+```
+  _checkpoint_manager.write_types();
+  _checkpoint_manager.write_epoch_transition_mspace();
+  write_stacktrace_checkpoint(_stack_trace_repository, _chunkwriter, false);
+  write_stringpool_checkpoint(_string_pool, _chunkwriter);
+```
+
+so let's look at `write_types()` first:
+
+## write_types()
+
+`JfrCheckpointManager::write_types()` which calls `JfrTypeManager::write_types(writer)`.
+This implementation iterates over a list of `JfrSerializerRegistration`, which I suppose
+is one per type that has been registered.
