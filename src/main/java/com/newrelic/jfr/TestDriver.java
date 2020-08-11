@@ -1,5 +1,7 @@
 package com.newrelic.jfr;
 
+import jdk.jfr.consumer.RecordedEvent;
+import jdk.jfr.consumer.RecordingFile;
 import jdk.management.jfr.RecordingInfo;
 
 import javax.management.InstanceNotFoundException;
@@ -17,7 +19,10 @@ import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 import javax.management.remote.JMXServiceURL;
 import javax.management.remote.rmi.RMIConnector;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -54,10 +59,18 @@ public class TestDriver {
                 new Object[]{recordingId, tabularData}, new String[]{"long", "javax.management.openmbean.TabularData"});
         System.out.println("Stream opened: " + streamId);
 
+
+        var out = new FileOutputStream("/tmp/testfile.jfr");
         byte[] chunk;
         while ((chunk = readBytes(conn, flightRecorder, streamId)) != null) {
             System.out.println("Read " + chunk.length + " bytes from fake stream");
+            out.write(chunk);
         }
+        out.close();
+
+        var rec = new RecordingFile(new File("/tmp/testfile.jfr").toPath());
+        var ev = rec.readEvent();
+
         System.out.println("All data streamed.");
         conn.invoke(flightRecorder, "closeStream", new Object[]{streamId}, new String[]{"long"});
         System.out.println("Stream closed");
