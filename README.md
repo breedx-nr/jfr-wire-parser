@@ -79,47 +79,7 @@ when the chunk is finished, the "chunk header" starting at offset 8 is written.
 | chunk duration nanos | 40     | 8      | 0000 0002 550f 4b00 | this chunk took 10.017 seconds |
 | chunk start ticks    | 48     | 8      | 0000 0128 9024 2ec3 | another big number   |
 | clock frequency      | 56     | 8      | 0000 0000 a0ee bb00 | this calls `os::elapsed_frequency()` which is platform dependent.  It's a billion on linux/bsd, 1 million on aix, etc. NOT CPU frequency. |  
-| compressed ints      | 64     | 4      | 0000 0001 | ints are compressed, [hard coded to always 1](https://github.com/openjdk/jdk11/blob/37115c8ea4aff13a8148ee2b8832b20888a5d880/src/hotspot/share/jfr/recorder/service/jfrOptionSet.cpp#L151)   
-
-# then...
-
-Events.
-
-| field                | offset | length | example   | notes               |
-|----------------------|--------|--------|-----------|----------------------
-| size                 | 68     | 4      | 9f9b 8000 | might be a strange 7-bit packing sequence.  See RecordingInput.readLong().  |    
-| typeId               | 72     | 8      | 01f3 83ed a3e4 0100 | 7-bit packed long. if typeId == 1, then it's the constant pool.  Otherwise, the type id is used to determine which parser to use.|
-    
-
-| size 68 4 9f9b 8000 | 
-
-
-There's a section in `JfrRecorderService.cpp` in the `write` method that
-has 
-```
-  pre_safepoint_write();
-  invoke_safepoint_write();
-  post_safepoint_write();
-``` 
-and `-re_safepoint_write()` has:
-
-```
-  _checkpoint_manager.write_types();
-  _checkpoint_manager.write_epoch_transition_mspace();
-  write_stacktrace_checkpoint(_stack_trace_repository, _chunkwriter, false);
-  write_stringpool_checkpoint(_string_pool, _chunkwriter);
-```
-
-so let's look at `write_types()` first:
-
-## write_types()
-
-`JfrCheckpointManager::write_types()` which calls `JfrTypeManager::write_types(writer)`.
-This implementation iterates over a list of `JfrSerializerRegistration`, which I suppose
-is one per type that has been registered.
-
-`JfrSerializerRegistration::invoke` writes the [... tbd]
-
+| compressed ints      | 64     | 4      | 0000 0001 | ints are compressed, the parsing side calls this "features" (unused). [hard coded to always 1](https://github.com/openjdk/jdk11/blob/37115c8ea4aff13a8148ee2b8832b20888a5d880/src/hotspot/share/jfr/recorder/service/jfrOptionSet.cpp#L151)   
 
 # metadata
 
@@ -131,6 +91,8 @@ special 7-bit packed format, and therefore computing offsets is impossible.  Onc
 reading metadata, don't lose your place, or you will have to re-read everything.
 
 It's all stateful!
+
+`sid` is the "string index" in the constant pool.
 
 | field                | offset | length | example    | notes               |
 |----------------------|--------|--------|------------|---------------------|
@@ -144,8 +106,32 @@ It's all stateful!
 | cp 2                 | ? n/a  | v      | ?          | an encoded string.  there are `const pool size` consecutive entries of this same type. |
 | ...                  |        |        |            | an encoded string.  there are `const pool size` consecutive entries of this same type. |
 | cp n                 | ? n/a  | v      | ?          | an encoded string.  there are `const pool size` consecutive entries of this same type. |
+| root name sid        | ? n/a  | v      | 70         | the name of the root element          |
+| attribute count      | ? n/a  | v      | 00         | the number of attributes in the root element. In this example it was 0.  |
+| <key1> sid           | ? n/a  | v      | 12         | index to key in constant pool         |
+| <val1> sid           | ? n/a  | v      | 4A         | index to value in constant pool       |
+| <key2> sid           | ? n/a  | v      | xx         | index to key in constant pool         |
+| <val3> sid           | ? n/a  | v      | xx         | index to value in constant pool       |
+| ...                  | ? n/a  | v      | xx         | index to value in constant pool       |
+| <keyn> sid           | ? n/a  | v      | xx         | index to key in constant pool         |
+| <valn> sid           | ? n/a  | v      | xx         | index to value in constant pool       |
+| child count          | ? n/a  | v      | 02         | the number of elements for the root element   |
+
+This is now a recursive structure, where for each child we parse its name and attributes and
+child count and then its children.
+
+The root element of the metadata descriptor had (in this particular case) 2 children: `metadata` and
+`region`.  The metadata is the interesting bit.  It contains the mappings of id to type descriptor,
+which is later used in parsing.  It also says what each type consists of.  All of this is dynamically
+generated from the huge xml file descriptor in the JDK source repo.  The JDKs parser puts this metadata
+into maps for faster lookup.  The end result is a big map of parsers indexed by ID.  Most of the
+`EventParser` instances are composed of an array of other parsers.
+
 
 ## How to read a string:     
+
+Look in RecordingInput.java `readUTF()` for how to read/decode a string.
+In later JVMs this has moved to anther class (StringParser I think).
 
 When it comes time to read a string, read the first byte.
 
@@ -156,23 +142,20 @@ When it comes time to read a string, read the first byte.
 | <content bytes>      | ? n/a  | v      |            | this is the actual content of the constant pool string |
 
 
+# Events
 
+Hope you got all your metadata sorted in advance, because all of this is super specific
+and depends on having good metadata and descriptors.
 
-At that offset, we have:
+| field                | offset | length | example   | notes               |
+|----------------------|--------|--------|-----------|----------------------
+| size                 | 68     | 4      | 9f9b 8000 | might be a strange 7-bit packing sequence.  See RecordingInput.readLong().  |    
+| typeId               | 72     | 8      | 01f3 83ed a3e4 0100 | 7-bit packed long. if typeId == 1, then it's the constant pool.  Otherwise, the type id is used to determine which parser to use.|
+ 
+then a ton of type-specific parsing based on the metadata.
 
-input.readInt(); // size
-long id = input.readLong(); // event type id
-if (id != METADATA_TYPE_ID) {   // hardcoded to zero, yup
-    throw new IOException("Expected metadata event. Type id=" + id + ", should have been " + METADATA_TYPE_ID);
-}
-input.readLong(); // start time
-input.readLong(); // duration
-long metadataId = input.readLong();
+The process is basically look up the descriptor for that type ID, and then
+recursively execute the parsing tree in depth-first order.  You'll eventually be
+reading primitives and strings IDs.
+ 
 
-// MetadataReader.java
-size = input.readInt()
-
-
-# strings
-
-Look in RecordingInput.java `readUTF()` for how to read/decode a string.
