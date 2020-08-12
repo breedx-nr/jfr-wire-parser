@@ -31,6 +31,46 @@ public class ChunkHeader {
         return new Builder();
     }
 
+    public byte[] getMagic() {
+        return magic;
+    }
+
+    public short getMajor() {
+        return major;
+    }
+
+    public short getMinor() {
+        return minor;
+    }
+
+    public long getChunkSize() {
+        return chunkSize;
+    }
+
+    public long getCheckpointOffset() {
+        return checkpointOffset;
+    }
+
+    public long getMetadataOffset() {
+        return metadataOffset;
+    }
+
+    public long getChunkStartNanos() {
+        return chunkStartNanos;
+    }
+
+    public long getChunkDurationNanos() {
+        return chunkDurationNanos;
+    }
+
+    public long getChunkStartTicks() {
+        return chunkStartTicks;
+    }
+
+    public long getClockFrequency() {
+        return clockFrequency;
+    }
+
     public static class Builder {
         byte[] magic;
         short major;
