@@ -3,6 +3,7 @@ package com.newrelic.jfr.parser;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -25,6 +26,11 @@ public class ByteSupport {
         return readVarLenRecursive(buff, buff.get(), bytepos + 1, result);
     }
 
+    public String poolString(ByteBuffer buff, List<String> poolStrings) {
+        var index = (int) readVarLen(buff);
+        return poolStrings.get(index);
+    }
+
     public String readString(ByteBuffer buff) {
         byte enc = buff.get();
         switch (enc) {
@@ -34,12 +40,12 @@ public class ByteSupport {
                 return "";
             case 3: {
                 var size = (int) readVarLen(buff);
-                byte[] bytes = readBytes(buff, size);
+                var bytes = readBytes(buff, size);
                 return new String(bytes, UTF_8);
             }
             case 4: {
                 var size = (int) readVarLen(buff);
-                char[] chars = new char[size];
+                var chars = new char[size];
                 for (int i = 0; i < size; i++) {
                     chars[i] = (char) readVarLen(buff);
                 }
@@ -47,7 +53,7 @@ public class ByteSupport {
             }
             case 5: {
                 var size = (int) readVarLen(buff);
-                byte[] bytes = readBytes(buff, size);
+                var bytes = readBytes(buff, size);
                 return new String(bytes, ISO_8859_1);
             }
         }

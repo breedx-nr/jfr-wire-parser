@@ -2,7 +2,6 @@ package com.newrelic.jfr.parser;
 
 import com.newrelic.jfr.model.ChunkHeader;
 import com.newrelic.jfr.model.ChunkMetadata;
-import com.newrelic.jfr.model.ConstantPool;
 
 import java.nio.ByteBuffer;
 import java.util.stream.Collectors;
@@ -11,6 +10,7 @@ import java.util.stream.IntStream;
 public class ChunkMetadataParser {
 
     private final ByteSupport bs = new ByteSupport();
+    private final MetadataTreeParser treeParser = new MetadataTreeParser();
 
     public ChunkMetadata parse(ByteBuffer buff, ChunkHeader header) {
         buff.position((int) header.getMetadataOffset());
@@ -25,14 +25,17 @@ public class ChunkMetadataParser {
 
 //        parsePools(header, buff);
 
-        var numPoolStrings = (int)bs.readVarLen(buff);
+        var numPoolStrings = (int) bs.readVarLen(buff);
         var poolStrings = IntStream.range(0, numPoolStrings)
                 .mapToObj(x -> bs.readString(buff))
                 .collect(Collectors.toList());
 
+        var rootNode = treeParser.readTreeNode(buff, poolStrings);
+
 
         return null;
     }
+
 
     private void parsePools(ChunkHeader header, ByteBuffer buff) {
         var offset = header.getConstantPoolOffset();
