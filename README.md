@@ -74,7 +74,7 @@ when the chunk is finished, the "chunk header" starting at offset 8 is written.
 | major                | 4      | 2      | 0002    | major version       |
 | minor                | 6      | 2      | 0000    | minor version       |
 | chunk size           | 8      | 8      | 0000 0000 0010 b182 | the total size of the chunk, in this example 1094018 bytes decimal | 
-| checkpoint offset    | 16     | 8      | 0000 0000 000f 0147 | obtained from _chunkstate->previous_checkpoint_offset(), so maybe "initial" means previous?   | 
+| constant pool offset | 16     | 8      | 0000 0000 000f 0147 | obtained from _chunkstate->previous_checkpoint_offset(), so maybe "initial" means previous?   | 
 | metadata offset      | 24     | 8       | 0000 0000 000f 8dab | metadata is the last thing written in the chunk, this is the offset to it |
 | chunk start nanos    | 32     | 8      | 162a 092e cfe0 6f00 | that's a big number eh |
 | chunk duration nanos | 40     | 8      | 0000 0002 550f 4b00 | this chunk took 10.017 seconds |

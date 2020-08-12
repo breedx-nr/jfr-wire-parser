@@ -72,15 +72,16 @@ public class TestDriver {
             System.out.println("Read " + chunk.length + " bytes from fake stream");
             out.write(chunk);
 
-            if(chunkBuff.complete()){
-                var chunkBytes = chunkBuff.get();
-                var result = new ChunkParser().parse(chunkBytes);
-            }
+
         }
         out.close();
 
-//        var rec = new RecordingFile(new File("/tmp/testfile.jfr").toPath());
-//        var ev = rec.readEvent();
+        if(chunkBuff.complete()){
+            var chunkBytes = chunkBuff.get();
+            var result = new ChunkParser().parse(chunkBytes);
+        }
+        var rec = new RecordingFile(new File("/tmp/testfile.jfr").toPath());
+        var ev = rec.readEvent();
 
 //        System.out.println("All data streamed.");
 //        conn.invoke(flightRecorder, "closeStream", new Object[]{streamId}, new String[]{"long"});

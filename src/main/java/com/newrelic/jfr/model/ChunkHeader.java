@@ -7,7 +7,7 @@ public class ChunkHeader {
     private final short major;
     private final short minor;
     private final long chunkSize;
-    private final long checkpointOffset;
+    private final long constantPoolOffset;
     private final long metadataOffset;
     private final long chunkStartNanos;
     private final long chunkDurationNanos;
@@ -19,7 +19,7 @@ public class ChunkHeader {
         this.major = builder.major;
         this.minor = builder.minor;
         this.chunkSize = builder.chunkSize;
-        this.checkpointOffset = builder.checkpointOffset;
+        this.constantPoolOffset = builder.constantPoolOffset;
         this.metadataOffset = builder.metadataOffset;
         this.chunkStartNanos = builder.chunkStartNanos;
         this.chunkDurationNanos = builder.chunkDurationNanos;
@@ -47,8 +47,8 @@ public class ChunkHeader {
         return chunkSize;
     }
 
-    public long getCheckpointOffset() {
-        return checkpointOffset;
+    public long getConstantPoolOffset() {
+        return constantPoolOffset;
     }
 
     public long getMetadataOffset() {
@@ -76,7 +76,7 @@ public class ChunkHeader {
         short major;
         short minor;
         long chunkSize;
-        long checkpointOffset;
+        long constantPoolOffset;
         long metadataOffset;
         long chunkStartNanos;
         long chunkDurationNanos;
@@ -104,7 +104,7 @@ public class ChunkHeader {
         }
 
         public Builder checkpointOffset(long checkpointOffset){
-            this.checkpointOffset = checkpointOffset;
+            this.constantPoolOffset = checkpointOffset;
             return this;
         }
 
