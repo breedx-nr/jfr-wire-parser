@@ -34,6 +34,7 @@ public class TestDriver {
     final static int port = 1099;
 
     public static void main(String[] args) throws Exception {
+/*
         var conn = connect();
         System.out.println("Server connection established");
         var flightRecorder = new ObjectName("jdk.management.jfr:type=FlightRecorder");
@@ -68,12 +69,13 @@ public class TestDriver {
         }
         out.close();
 
+*/
         var rec = new RecordingFile(new File("/tmp/testfile.jfr").toPath());
         var ev = rec.readEvent();
 
-        System.out.println("All data streamed.");
-        conn.invoke(flightRecorder, "closeStream", new Object[]{streamId}, new String[]{"long"});
-        System.out.println("Stream closed");
+//        System.out.println("All data streamed.");
+//        conn.invoke(flightRecorder, "closeStream", new Object[]{streamId}, new String[]{"long"});
+//        System.out.println("Stream closed");
 
     }
 
