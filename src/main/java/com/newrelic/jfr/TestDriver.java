@@ -1,5 +1,7 @@
 package com.newrelic.jfr;
 
+import com.newrelic.jfr.model.Chunk;
+import com.newrelic.jfr.parser.ChunkParser;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordingFile;
 import jdk.management.jfr.RecordingInfo;
@@ -34,7 +36,6 @@ public class TestDriver {
     final static int port = 1099;
 
     public static void main(String[] args) throws Exception {
-/*
         var conn = connect();
         System.out.println("Server connection established");
         var flightRecorder = new ObjectName("jdk.management.jfr:type=FlightRecorder");
@@ -60,18 +61,26 @@ public class TestDriver {
                 new Object[]{recordingId, tabularData}, new String[]{"long", "javax.management.openmbean.TabularData"});
         System.out.println("Stream opened: " + streamId);
 
+        ChunkBuff chunkBuff = new ChunkBuff();
 
         var out = new FileOutputStream("/tmp/testfile.jfr");
         byte[] chunk;
         while ((chunk = readBytes(conn, flightRecorder, streamId)) != null) {
+
+            chunkBuff.add(chunk);
+
             System.out.println("Read " + chunk.length + " bytes from fake stream");
             out.write(chunk);
+
+            if(chunkBuff.complete()){
+                var chunkBytes = chunkBuff.get();
+                var result = new ChunkParser().parse(chunkBytes);
+            }
         }
         out.close();
 
-*/
-        var rec = new RecordingFile(new File("/tmp/testfile.jfr").toPath());
-        var ev = rec.readEvent();
+//        var rec = new RecordingFile(new File("/tmp/testfile.jfr").toPath());
+//        var ev = rec.readEvent();
 
 //        System.out.println("All data streamed.");
 //        conn.invoke(flightRecorder, "closeStream", new Object[]{streamId}, new String[]{"long"});

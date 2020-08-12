@@ -20,25 +20,27 @@ public class ChunkBuff {
 
     // gets the chunk, or null if not big enough yet
     public byte[] get() {
-        int size = targetSize();
+        long unreasonableSize = targetSize();
+        int size = (int) unreasonableSize;
         if (size == UNKNOWN_SIZE) {
-
+            return null;
         }
         byte[] dst = new byte[size];
+        int previousPosition = buff.position();
+        buff.position(0);
         buff.get(dst, 0, size);
+        buff.position(previousPosition);
         return dst;
     }
 
-    private boolean complete() {
+    public boolean complete() {
         return buff.position() >= targetSize();
     }
 
-    private int targetSize() {
+    private long targetSize() {
         if (buff.position() < 16) {
             return UNKNOWN_SIZE;
         }
-        byte[] dst = new byte[8];
-        buff.get(dst, 8, 8);
-        return (int) ByteBuffer.wrap(dst).getLong();
+        return buff.getLong(8);
     }
 }
