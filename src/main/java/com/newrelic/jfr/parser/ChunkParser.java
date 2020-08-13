@@ -8,8 +8,8 @@ import java.nio.ByteBuffer;
 
 public class ChunkParser {
 
-    private ChunkHeaderParser headerParser = new ChunkHeaderParser();
-    private ChunkMetadataParser metadataParser = new ChunkMetadataParser();
+    private final ChunkHeaderParser headerParser = new ChunkHeaderParser();
+    private final ChunkMetadataParser metadataParser = new ChunkMetadataParser();
 
     public Chunk parse(byte[] chunk){
         var buff = ByteBuffer.wrap(chunk);
