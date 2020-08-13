@@ -23,7 +23,7 @@ public class ChunkMetadataParser {
         var duration = bs.readVarLen(buff);
         var metadataId = bs.readVarLen(buff);
 
-//        parsePools(header, buff);
+//        parsePools(header, buff); ??????
 
         var numPoolStrings = (int) bs.readVarLen(buff);
         var poolStrings = IntStream.range(0, numPoolStrings)
@@ -32,8 +32,7 @@ public class ChunkMetadataParser {
 
         var rootNode = treeParser.readTreeNode(buff, poolStrings);
 
-
-        return null;
+        return new ChunkMetadata(header, startTime, duration, metadataId, poolStrings, rootNode);
     }
 
 

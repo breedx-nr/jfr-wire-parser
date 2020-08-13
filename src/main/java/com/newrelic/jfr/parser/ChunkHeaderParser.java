@@ -10,6 +10,7 @@ public class ChunkHeaderParser {
 
     static final byte[] EXPECTED_MAGIC = new byte[]{'F', 'L', 'R', 0};
     public static final int EXPECTED_MAJOR_VERSION = 2;
+    public final static int EVENT_START_OFFSET = 68;
 
     public ChunkHeader parse(ByteBuffer buff) {
         byte[] magic = readMagic(buff);
