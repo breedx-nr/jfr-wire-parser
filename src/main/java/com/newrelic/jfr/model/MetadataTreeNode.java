@@ -1,6 +1,8 @@
 package com.newrelic.jfr.model;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MetadataTreeNode {
 
@@ -24,5 +26,22 @@ public class MetadataTreeNode {
 
     public List<MetadataTreeNode> getChildren() {
         return children;
+    }
+
+    public String attr(String key){
+        return maybeAttr(key).get();
+    }
+
+    public Optional<String> maybeAttr(String key){
+        return attributes.stream()
+                .filter(a -> a.getKey().equals(key))
+                .map(KeyValuePair::getValue)
+                .findFirst();
+    }
+
+    public List<MetadataTreeNode> childrenNamed(String name){
+        return children.stream()
+                .filter(child -> child.getName().equals(name))
+                .collect(Collectors.toList());
     }
 }

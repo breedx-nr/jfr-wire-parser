@@ -1,6 +1,8 @@
 package com.newrelic.jfr.model;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ChunkMetadata {
     private final ChunkHeader header;
@@ -41,5 +43,15 @@ public class ChunkMetadata {
 
     public MetadataTreeNode getRootNode() {
         return rootNode;
+    }
+
+    public Map<Integer,MetadataTreeNode> getMetadataChildrenIndexedById(){
+        return rootNode.getChildren().stream()
+                .filter(x -> x.getName().equals("metadata"))
+                .findFirst()
+                .get()
+                .getChildren()
+                .stream()
+                .collect(Collectors.toMap(a -> Integer.parseInt(a.attr("id")), a -> a));
     }
 }

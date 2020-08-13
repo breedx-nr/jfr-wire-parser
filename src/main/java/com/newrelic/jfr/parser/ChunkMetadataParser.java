@@ -34,28 +34,4 @@ public class ChunkMetadataParser {
 
         return new ChunkMetadata(header, startTime, duration, metadataId, poolStrings, rootNode);
     }
-
-
-    private void parsePools(ChunkHeader header, ByteBuffer buff) {
-        var offset = header.getConstantPoolOffset();
-        buff.position((int) offset);
-        var size = (int) bs.readVarLen(buff);
-        var typeId = (int) bs.readVarLen(buff);
-        var timestamp = bs.readVarLen(buff);
-        var duration = bs.readVarLen(buff);
-
-        var offsetToNextPool = bs.readVarLen(buff);
-        var flush = bs.readVarLen(buff) != 0;   //?????
-
-        parsePools(buff);
-    }
-
-    private void parsePools(ByteBuffer buff) {
-        var ct = bs.readVarLen(buff);
-        System.out.println("**DEBUG: parsing " + ct + " pools");
-        for (int i = 0; i < ct; i++) {
-            var constantPool = new ConstantPoolParser().parse(buff);
-        }
-    }
-
 }
