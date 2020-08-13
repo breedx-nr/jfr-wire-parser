@@ -25,13 +25,13 @@ public class ChunkMetadataParser {
 
 //        parsePools(header, buff); ??????
 
-        var numPoolStrings = (int) bs.readVarLen(buff);
-        var poolStrings = IntStream.range(0, numPoolStrings)
+        var numConstantStrings = (int) bs.readVarLen(buff);
+        var constantStrings = IntStream.range(0, numConstantStrings)
                 .mapToObj(x -> bs.readString(buff))
                 .collect(Collectors.toList());
 
-        var rootNode = treeParser.readTreeNode(buff, poolStrings);
+        var rootNode = treeParser.readTreeNode(buff, constantStrings);
 
-        return new ChunkMetadata(header, startTime, duration, metadataId, poolStrings, rootNode);
+        return new ChunkMetadata(header, startTime, duration, metadataId, constantStrings, rootNode);
     }
 }
