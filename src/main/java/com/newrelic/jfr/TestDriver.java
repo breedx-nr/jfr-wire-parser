@@ -86,6 +86,7 @@ public class TestDriver {
 //        System.out.println("All data streamed.");
 //        conn.invoke(flightRecorder, "closeStream", new Object[]{streamId}, new String[]{"long"});
 //        System.out.println("Stream closed");
+        ev = null;
 
     }
 

@@ -129,6 +129,25 @@ into maps for faster lookup.  The end result is a big map of parsers indexed by 
 `EventParser` instances are composed of an array of other parsers.
 
 
+## How to read a number:  
+
+Once you are past the chunk header, char, short, int, and long values are stored
+in a compact 7-bit packed format. While complicated, this format does generally save
+a lot of bits on the wire.
+
+So, how does it work?  Bytes are written out little-endian, and the format leverages
+the sign bit (high bit) of each byte.  Normally, writing an `int` would mandate 4 bytes 
+(to match the type), but in this packed format, it can take 1, 2, 3, 4, or 5 bytes.
+
+* start accumulator at 0
+* up to 8 times:
+  * read a byte
+  * mask off the sign byte
+  * left shift by (7*bit position) bits
+  * add to accumulator
+  * if byte read sign bit clear, break
+* return accumulator
+   
 ## How to read a string:     
 
 Look in RecordingInput.java `readUTF()` for how to read/decode a string.
